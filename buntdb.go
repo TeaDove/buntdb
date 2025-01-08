@@ -1039,6 +1039,32 @@ func (db *DB) View(fn func(tx *Tx) error) error {
 	return db.managed(false, fn)
 }
 
+// Get returns a value for a key. If the item does not exist or if the item
+// has expired then ErrNotFound is returned. If ignoreExpired is true, then
+// the found value will be returned even if it is expired.
+//
+// Syntax sugar over Tx.Get
+func (db *DB) Get(key string, ignoreExpired ...bool) (val string, err error) {
+	err = db.View(func(tx *Tx) error {
+		val, err = tx.Get(key, ignoreExpired...)
+		return err
+	})
+	return
+}
+
+// GetByIndex returns first found value by provided index.
+// If the item does not exist or if the item has expired then ErrNotFound is returned.
+// An invalid index will return an error.
+//
+// Syntax sugar over Tx.GetByIndex
+func (db *DB) GetByIndex(index, pivot string) (val string, err error) {
+	err = db.View(func(tx *Tx) error {
+		val, err = tx.GetByIndex(index, pivot)
+		return err
+	})
+	return
+}
+
 // Update executes a function within a managed read/write transaction.
 // The transaction has been committed when no error is returned.
 // In the event that an error is returned, the transaction will be rolled back.
@@ -1049,6 +1075,27 @@ func (db *DB) View(fn func(tx *Tx) error) error {
 // in a panic.
 func (db *DB) Update(fn func(tx *Tx) error) error {
 	return db.managed(true, fn)
+}
+
+// Set inserts or replaces an item in the database based on the key.
+// The opt params may be used for additional functionality such as forcing
+// the item to be evicted at a specified time. When the return value
+// for err is nil the operation succeeded. When the return value of
+// replaced is true, then the operaton replaced an existing item whose
+// value will be returned through the previousValue variable.
+// The results of this operation will not be available to other
+// transactions until the current transaction has successfully committed.
+//
+// Only a writable transaction can be used with this operation.
+// This operation is not allowed during iterations such as Ascend* & Descend*.
+//
+// Syntax sugar over Tx.Set
+func (db *DB) Set(key, value string, opts *SetOptions) (previousValue string, replaced bool, err error) {
+	err = db.Update(func(tx *Tx) error {
+		previousValue, replaced, err = tx.Set(key, value, opts)
+		return err
+	})
+	return
 }
 
 // get return an item or nil if not found.
@@ -1917,6 +1964,30 @@ func (tx *Tx) AscendEqual(index, pivot string,
 	})
 }
 
+// GetByIndex returns first found value by provided index.
+// If the item does not exist or if the item has expired then ErrNotFound is returned.
+// An invalid index will return an error.
+func (tx *Tx) GetByIndex(index, pivot string) (val string, err error) {
+	var (
+		ok bool
+	)
+
+	err = tx.AscendEqual(index, pivot, func(key, value string) bool {
+		val = value
+		ok = true
+		return false
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if !ok {
+		return "", ErrNotFound
+	}
+
+	return val, nil
+}
+
 // DescendEqual calls the iterator for every item in the database that equals
 // pivot, until iterator returns false.
 // When an index is provided, the results will be ordered by the item values
@@ -2047,6 +2118,10 @@ type IndexOptions struct {
 	// CaseInsensitiveKeyMatching allow for case-insensitive
 	// matching on keys when setting key/values.
 	CaseInsensitiveKeyMatching bool
+
+	// Unique checks for uniqueness of index value
+	// If uniqueness violated - set operation will replace value even if key is new
+	Unique bool
 }
 
 // CreateIndex builds a new index and populates it with items.

@@ -112,6 +112,9 @@ err := db.Update(func(tx *buntdb.Tx) error {
 	_, _, err := tx.Set("mykey", "myvalue", nil)
 	return err
 })
+
+// Or without explicit transaction
+_, _, err = tx.Set("mykey", "myvalue", nil)
 ```
 
 
@@ -126,6 +129,10 @@ err := db.View(func(tx *buntdb.Tx) error {
 	fmt.Printf("value is %s\n", val)
 	return nil
 })
+
+// Or without explicit transaction
+val, err := tx.Get("mykey")
+fmt.Printf("value is %s\n", val)
 ```
 
 Getting non-existent values will cause an `ErrNotFound` error.
@@ -194,6 +201,21 @@ user:6:name peter
 user:1:name Randi
 user:7:name Terri
 user:0:name tom
+```
+
+Or just get one value 
+```go 
+db.View(func(tx *buntdb.Tx) error {
+	val, err := tx.GetByIndex("names", "jane")
+	if err != nil{
+		return err
+    }   
+	fmt.Printf(buf, "%s %s\n", "jane", val)
+	return nil
+})
+```
+```
+jane jane
 ```
 
 The pattern parameter can be used to filter on keys like this:

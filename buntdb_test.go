@@ -1858,6 +1858,30 @@ func test(t *testing.T, a, b bool) {
 	}
 }
 
+func TestGetSet(t *testing.T) {
+	db := testOpen(t)
+	defer testClose(db)
+
+	_, err := db.Get("tag")
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatal("expecting not found")
+	}
+
+	_, _, err = db.Set("tag", "val", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	val, err := db.Get("tag")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if val != "val" {
+		t.Fatalf("expecting %v, got %v", "val", val)
+	}
+}
+
 func TestBasic(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	db := testOpen(t)
@@ -1904,7 +1928,7 @@ func TestBasic(t *testing.T) {
 		start := time.Now()
 		if err := db.Update(func(tx *Tx) error {
 			for _, i := range rand.Perm(100) {
-				if _, _, err := tx.Set(fmt.Sprintf("tag:%d", i+100), fmt.Sprintf("val:%d", rand.Int()%100+100), nil); err != nil {
+				if _, _, err := tx.Set(fmt.Sprintf("tag:%d", i+100), fmt.Sprintf("val:%d", i+100), nil); err != nil {
 					return err
 				}
 			}
@@ -1941,6 +1965,18 @@ func TestBasic(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		val, err := tx.GetByIndex("", "tag:160")
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Fprintf(buf, "%s\n", val)
+		val, err = tx.GetByIndex("", "tag:161")
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Fprintf(buf, "%s\n", val)
+
 		err = tx.AscendRange("", "tag:170", "tag:172", func(key, val string) bool {
 			fmt.Fprintf(buf, "%s\n", key)
 			return true
@@ -1955,6 +1991,7 @@ func TestBasic(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		err = tx.AscendGreaterOrEqual("", "rect:", func(key, val string) bool {
 			if !strings.HasPrefix(key, "rect:") {
 				return false
@@ -2003,6 +2040,8 @@ fun:user:6 peter
 fun:user:1 Randi
 fun:user:7 Terri
 fun:user:0 tom
+val:160
+val:161
 tag:170
 tag:171
 tag:195
