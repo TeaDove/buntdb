@@ -1182,6 +1182,9 @@ func ExampleDB_CreateIndex_jSON() {
 			fmt.Printf("%s: %s\n", key, value)
 			return true
 		})
+		fmt.Println("Exactly 52 once")
+		key, value, _ := tx.GetByIndex("age", `{"age": 52}`)
+		fmt.Printf("%s: %s\n", key, value)
 		return nil
 	})
 
@@ -1199,6 +1202,8 @@ func ExampleDB_CreateIndex_jSON() {
 	// Order by age range 30-50
 	// 1: {"name":{"first":"Tom","last":"Johnson"},"age":38}
 	// 2: {"name":{"first":"Janet","last":"Prichard"},"age":47}
+	// Exactly 52 once
+	// 3: {"name":{"first":"Carol","last":"Anderson"},"age":52}
 }
 
 func ExampleDB_CreateIndex_strings() {
@@ -1966,15 +1971,17 @@ func TestBasic(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		val, err := tx.GetByIndex("", "tag:160")
+		key, val, err := tx.GetByIndex("", "tag:160")
 		if err != nil {
 			t.Fatal(err)
 		}
+		fmt.Fprintf(buf, "%s\n", key)
 		fmt.Fprintf(buf, "%s\n", val)
-		val, err = tx.GetByIndex("", "tag:161")
+		key, val, err = tx.GetByIndex("", "tag:161")
 		if err != nil {
 			t.Fatal(err)
 		}
+		fmt.Fprintf(buf, "%s\n", key)
 		fmt.Fprintf(buf, "%s\n", val)
 
 		err = tx.AscendRange("", "tag:170", "tag:172", func(key, val string) bool {
@@ -2040,7 +2047,9 @@ fun:user:6 peter
 fun:user:1 Randi
 fun:user:7 Terri
 fun:user:0 tom
+tag:160
 val:160
+tag:161
 val:161
 tag:170
 tag:171

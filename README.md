@@ -413,6 +413,9 @@ func main() {
 			fmt.Printf("%s: %s\n", key, value)
 			return true
 		})
+		fmt.Println("Exactly 52 once")
+		key, value, _ := tx.GetByIndex("age", `{"age": 52}`)
+		fmt.Printf("%s: %s\n", key, value)
 		return nil
 	})
 }
@@ -426,16 +429,16 @@ Order by last name
 4: {"name":{"first":"Alan","last":"Cooper"},"age":28}
 1: {"name":{"first":"Tom","last":"Johnson"},"age":38}
 2: {"name":{"first":"Janet","last":"Prichard"},"age":47}
-
 Order by age
 4: {"name":{"first":"Alan","last":"Cooper"},"age":28}
 1: {"name":{"first":"Tom","last":"Johnson"},"age":38}
 2: {"name":{"first":"Janet","last":"Prichard"},"age":47}
 3: {"name":{"first":"Carol","last":"Anderson"},"age":52}
-
 Order by age range 30-50
 1: {"name":{"first":"Tom","last":"Johnson"},"age":38}
 2: {"name":{"first":"Janet","last":"Prichard"},"age":47}
+Exactly 52 once
+3: {"name":{"first":"Carol","last":"Anderson"},"age":52}
 ```
 
 ## Multi Value Index

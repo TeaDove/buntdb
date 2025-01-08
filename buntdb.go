@@ -1057,9 +1057,9 @@ func (db *DB) Get(key string, ignoreExpired ...bool) (val string, err error) {
 // An invalid index will return an error.
 //
 // Syntax sugar over Tx.GetByIndex
-func (db *DB) GetByIndex(index, pivot string) (val string, err error) {
+func (db *DB) GetByIndex(index, pivot string) (key, val string, err error) {
 	err = db.View(func(tx *Tx) error {
-		val, err = tx.GetByIndex(index, pivot)
+		key, val, err = tx.GetByIndex(index, pivot)
 		return err
 	})
 	return
@@ -1967,25 +1967,26 @@ func (tx *Tx) AscendEqual(index, pivot string,
 // GetByIndex returns first found value by provided index.
 // If the item does not exist or if the item has expired then ErrNotFound is returned.
 // An invalid index will return an error.
-func (tx *Tx) GetByIndex(index, pivot string) (val string, err error) {
+func (tx *Tx) GetByIndex(index, pivot string) (key, val string, err error) {
 	var (
 		ok bool
 	)
 
-	err = tx.AscendEqual(index, pivot, func(key, value string) bool {
-		val = value
+	err = tx.AscendEqual(index, pivot, func(k, v string) bool {
+		key = k
+		val = v
 		ok = true
 		return false
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if !ok {
-		return "", ErrNotFound
+		return "", "", ErrNotFound
 	}
 
-	return val, nil
+	return key, val, nil
 }
 
 // DescendEqual calls the iterator for every item in the database that equals
